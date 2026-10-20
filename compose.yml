@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres
+    restart: always
+    shm_size: 128mb
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: example
+      POSTGRES_DB: rezervariCamin
+    volumes:
+      - ../appdata/spalatorie/db:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+  adminer:
+    image: adminer
+    restart: always
+    depends_on:
+      - db
+    # ports:
+    #   - 8030:8080
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: backend:latest
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - 8881:8881
+    env_file:
+      - ./.env
