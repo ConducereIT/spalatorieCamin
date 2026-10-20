@@ -1,0 +1,100 @@
+// same db as the old app, do not change the models or migrations
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "linux-musl-arm64-openssl-3.0.x", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model events {
+  id          Int      @id @default(autoincrement())
+  email       String
+  title       String
+  start_event DateTime
+  end_event   DateTime
+  calendar_n  String
+  phone       String
+  camera      String
+}
+
+model infoUser {
+  id     Int    @id @default(autoincrement())
+  userId String @unique @db.Uuid // Changed to @db.Uuid to match User.id
+  phone  String
+  camera String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model maintenance {
+  id     Int       @id @default(autoincrement())
+  status Boolean
+  date   DateTime?
+}
+
+model User {
+  id            String    @id @default(uuid()) @db.Uuid // Generates native UUIDs
+  name          String
+  email         String
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  infoUser      infoUser?
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id @default(uuid()) @db.Uuid // Changed to @db.Uuid
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String   @db.Uuid // Changed to @db.Uuid to match User.id
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(uuid()) @db.Uuid // Changed to @db.Uuid
+  accountId             String
+  providerId            String
+  userId                String    @db.Uuid // Changed to @db.Uuid to match User.id
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @default(uuid()) @db.Uuid // Changed to @db.Uuid
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
